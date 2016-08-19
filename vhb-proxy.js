@@ -237,6 +237,24 @@ function startServer(activeConfig){
 	// 	});
 	
 	// });
+
+
+    //Proxy for Webtrekk
+    app.get('/357500119523122/wt', function(req, res){
+        var  newUrl = req.url.split('/');
+        newUrl.shift();
+        newUrl = 'http://handelsblatt01.webtrekk.net/' + newUrl.join('/');
+        newUrl = newUrl.replace('vhb-hb-test.herokuapp.com', 'www.handelsblatt.com');
+
+        request.get({url: newUrl, proxy: PROXY}, function(err, response, body) {
+            for(var prop in response.headers) {
+                res.setHeader(prop, response.headers[prop]);
+            }
+            res.send(body);
+        });
+        
+    });
+
 	
 	app.all('/*', function(req, res) {
 	
@@ -261,15 +279,18 @@ function startServer(activeConfig){
 					body = contentReplace(body);
 	
 				} else {
-	
-					return res.redirect(url);
-	
+
+				    return res.redirect(url);
+
 				}
 				
 				//patch body if html
 				if ((url.indexOf('.html') > -1 || url.split('/').pop() === '') && url.indexOf('empty.js') === -1){
 					//console.log('Patching ' + url, response.headers['content-type']);
 					body = helper.patchHTML(body);
+                    //fix tracking
+                    body = body.replace('handelsblatt01.webtrekk.net', 
+                        process.env.proxystr ? 'localhost:38110' : 'vhb-hb-test.herokuapp.com');
 				}
 	
 				return res.send(body);
